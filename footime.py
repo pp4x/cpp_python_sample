@@ -7,4 +7,4 @@ class FooTime:
 
 	def print_foo(self):
 		self.__foo.print_foo()
-		print 'Time is', self.__now
+		print 'Time is', time.ctime(self.__now)

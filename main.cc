@@ -52,9 +52,10 @@ int main(int, char** argv)
 		object main_ns = main.attr("__dict__");
 		main_ns["Foo"] = wFoo;
 		main_ns["footime"] = foo_test;
-		exec("foo = footime.FooTime(Foo('Hello C++ Object!'))\n"
-			"foo.print_foo()"
-			, main_ns);
+		exec("foo = footime.FooTime(Foo('Hello C++ Object!'))\n", main_ns);
+		object foo = main_ns["foo"];
+		object print_foo = foo.attr("print_foo");
+		print_foo();
 	}
 	catch (const error_already_set & e)
 	{
