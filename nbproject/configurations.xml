@@ -8,7 +8,7 @@
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
                    projectFiles="true">
-      <itemPath>footime.py</itemPath>
+      <itemPath>bar.py</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
@@ -50,7 +50,7 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
-      <item path="footime.py" ex="false" tool="3" flavor2="0">
+      <item path="bar.py" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.cc" ex="false" tool="1" flavor2="0">
       </item>
@@ -79,7 +79,7 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp_python_sample</output>
         </linkerTool>
       </compileType>
-      <item path="footime.py" ex="false" tool="3" flavor2="0">
+      <item path="bar.py" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.cc" ex="false" tool="1" flavor2="0">
       </item>

@@ -27,7 +27,23 @@ struct Foo
 	void print_foo() const
 	{
 		std::cout << foo << std::endl;
+		std::cout.flush();
 	}
+};
+
+struct FooWrapper
+{
+	FooWrapper(const Foo * foo): 
+	foo(foo) 
+	{
+	}
+	
+	void print_foo() const
+	{
+		foo->print_foo();
+	}
+	
+	const Foo * foo;
 };
 
 /*
@@ -35,8 +51,10 @@ struct Foo
  */
 int main(int, char** argv)
 {
+	Foo foo("natively constructed!");
 	try
 	{
+
 		auto base_python_path = getenv("PYTHONPATH");
 		std::string python_path = std::string(".:") + std::string(base_python_path ? base_python_path : "");
 		setenv("PYTHONPATH", python_path.c_str(), true);
@@ -44,17 +62,25 @@ int main(int, char** argv)
 		Py_SetProgramName(argv[0]);
 		Py_Initialize();
 
-		class_<Foo> wFoo("Foo", init<std::string>());
-		wFoo.def("print_foo", &Foo::print_foo);
+		class_<Foo> fooClass("Foo", init<std::string>());
+		fooClass.def("print_foo", &Foo::print_foo);
+		
+		class_<FooWrapper> fooWrapper("FooWrapper", init<Foo*>());
+		fooWrapper.def("print_foo", &FooWrapper::print_foo);
+		
 
-		object foo_test = import("footime");
 		object main = import("__main__");
 		object main_ns = main.attr("__dict__");
-		main_ns["Foo"] = wFoo;
-		main_ns["footime"] = foo_test;
-		exec("foo = footime.FooTime(Foo('Hello C++ Object!'))\n", main_ns);
-		object foo = main_ns["foo"];
-		object print_foo = foo.attr("print_foo");
+		main_ns["Foo"] = fooClass;
+		main_ns["FooW"] = fooWrapper;
+		main_ns["bar"] = import("bar");
+		main_ns["foow"] = fooWrapper(foo);
+		exec("bar1 = bar.Bar(Foo('Hello C++ Object!'))\n"
+			 "bar2 = bar.Bar(foow)\n"
+			 "bar2.print_bar()"
+			,main_ns);
+		object bar1 = main_ns["bar1"];
+		object print_foo = bar1.attr("print_bar");
 		print_foo();
 	}
 	catch (const error_already_set & e)
