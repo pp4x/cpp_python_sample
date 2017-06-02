@@ -80,8 +80,8 @@ int main(int, char** argv)
 			 "bar2.print_bar()"
 			,main_ns);
 		object bar1 = main_ns["bar1"];
-		object print_foo = bar1.attr("print_bar");
-		print_foo();
+		object print_bar = bar1.attr("print_bar");
+		print_bar();
 	}
 	catch (const error_already_set & e)
 	{
