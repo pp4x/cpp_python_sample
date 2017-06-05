@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <string>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 using namespace boost::python;
@@ -31,19 +32,62 @@ struct Foo
 	}
 };
 
-struct FooWrapper
+struct CBar
 {
-	FooWrapper(const Foo * foo): 
-	foo(foo) 
+
+	void print(Foo * foo)
 	{
-	}
-	
-	void print_foo() const
-	{
+		std::cout << "back to C++: ";
 		foo->print_foo();
 	}
+};
+
+struct Point
+{
+	static object define_class()
+	{
+		class_<Point> pointClass("Point", init<int, int>());
+		pointClass.def_readwrite("x", &Point::x)
+			.def_readwrite("y", &Point::y);
+		return pointClass;
+	}
 	
-	const Foo * foo;
+	int x = 0;
+	int y = 0;
+
+	Point(int x, int y) : x(x), y(y)
+	{
+	}
+};
+
+template<class X>
+struct VectorWrapper
+{
+
+	static object define_class(const std::string & name)
+	{
+		class_<VectorWrapper> clazz(name.c_str(), no_init);
+
+		clazz.def("__iter__", range(&VectorWrapper::begin, &VectorWrapper::end));
+
+		return clazz;
+	}
+
+	std::vector<X> * vector;
+
+	VectorWrapper(std::vector<X> * vector) : vector(vector)
+	{
+	}
+
+	typename std::vector<X>::iterator begin()
+	{
+		return vector->begin();
+	}
+
+	typename std::vector<X>::iterator end()
+	{
+		return vector->end();
+	}
 };
 
 /*
@@ -52,6 +96,13 @@ struct FooWrapper
 int main(int, char** argv)
 {
 	Foo foo("natively constructed!");
+	std::vector<int> ints;
+	std::vector<Point> points;
+	for (int x = 0; x < 10; ++x)
+	{
+		ints.emplace_back(x);
+		points.emplace_back(x, x);
+	}
 	try
 	{
 
@@ -59,26 +110,49 @@ int main(int, char** argv)
 		std::string python_path = std::string(".:") + std::string(base_python_path ? base_python_path : "");
 		setenv("PYTHONPATH", python_path.c_str(), true);
 
+		// initialise python interpreter.
 		Py_SetProgramName(argv[0]);
 		Py_Initialize();
 
+		// define wrapper classes.
 		class_<Foo> fooClass("Foo", init<std::string>());
 		fooClass.def("print_foo", &Foo::print_foo);
-		
-		class_<FooWrapper> fooWrapper("FooWrapper", init<Foo*>());
-		fooWrapper.def("print_foo", &FooWrapper::print_foo);
-		
 
+		class_<CBar> cbarClass("CBar", init<>());
+		cbarClass.def("printf", &CBar::print);
+
+		// initialise objects.
 		object main = import("__main__");
 		object main_ns = main.attr("__dict__");
 		main_ns["Foo"] = fooClass;
-		main_ns["FooW"] = fooWrapper;
 		main_ns["bar"] = import("bar");
-		main_ns["foow"] = fooWrapper(foo);
-		exec("bar1 = bar.Bar(Foo('Hello C++ Object!'))\n"
-			 "bar2 = bar.Bar(foow)\n"
-			 "bar2.print_bar()"
-			,main_ns);
+		main_ns["foow"] = foo;
+		main_ns["CBar"] = cbarClass;
+		main_ns["IntVec"] = VectorWrapper<int>::define_class("IntVec");
+		main_ns["ints"] = VectorWrapper<int>(&ints);
+		main_ns["Point"] = Point::define_class();
+		main_ns["PointVec"] = VectorWrapper<Point>::define_class("PointVec");
+		main_ns["points"] = VectorWrapper<Point>(&points);
+
+		// instantiate some objects and call them from python side.
+		exec(
+			"print 'instatiation of objects.'\n"
+			"bar1 = bar.Bar(Foo('Hello C++ Object!'))\n"
+			"bar2 = bar.Bar(foow)\n"
+			"print 'call some functions passing differently constructed objects.'\n"
+			"bar2.print_bar()\n"
+			"bar3 = CBar()\n"
+			"bar3.printf(bar1.foo())\n"
+			"bar3.printf(foow)\n"
+			"print 'vector<int> iteration.'\n"
+			"for i in ints:\n"
+			" print i\n"
+			"print 'vector<Point> iteration.'\n"
+			"for p in points:\n"
+			" print p.x, p.y\n"
+			, main_ns);
+
+		// call method from native side.
 		object bar1 = main_ns["bar1"];
 		object print_bar = bar1.attr("print_bar");
 		print_bar();
