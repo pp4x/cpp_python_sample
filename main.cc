@@ -44,6 +44,7 @@ struct CBar
 
 struct Point
 {
+
 	static object define_class()
 	{
 		class_<Point> pointClass("Point", init<int, int>());
@@ -51,7 +52,7 @@ struct Point
 			.def_readwrite("y", &Point::y);
 		return pointClass;
 	}
-	
+
 	int x = 0;
 	int y = 0;
 
@@ -61,34 +62,18 @@ struct Point
 };
 
 template<class X>
-struct VectorWrapper
+object wrap_vector(const std::string & name)
 {
+	using vec_t = std::vector<X>;
+	class_<vec_t> clazz(name.c_str(), no_init);
 
-	static object define_class(const std::string & name)
-	{
-		class_<VectorWrapper> clazz(name.c_str(), no_init);
+	auto begin = (typename vec_t::iterator(vec_t::*)()) & vec_t::begin;
+	auto end = (typename vec_t::iterator(vec_t::*)()) & vec_t::end;
 
-		clazz.def("__iter__", range(&VectorWrapper::begin, &VectorWrapper::end));
+	clazz.def("__iter__", range(begin, end));
 
-		return clazz;
-	}
-
-	std::vector<X> * vector;
-
-	VectorWrapper(std::vector<X> * vector) : vector(vector)
-	{
-	}
-
-	typename std::vector<X>::iterator begin()
-	{
-		return vector->begin();
-	}
-
-	typename std::vector<X>::iterator end()
-	{
-		return vector->end();
-	}
-};
+	return clazz;
+}
 
 /*
  * 
@@ -128,11 +113,11 @@ int main(int, char** argv)
 		main_ns["bar"] = import("bar");
 		main_ns["foow"] = foo;
 		main_ns["CBar"] = cbarClass;
-		main_ns["IntVec"] = VectorWrapper<int>::define_class("IntVec");
-		main_ns["ints"] = VectorWrapper<int>(&ints);
+		main_ns["IntVec"] = wrap_vector<int>("IntVec");
+		main_ns["ints"] = &ints;
 		main_ns["Point"] = Point::define_class();
-		main_ns["PointVec"] = VectorWrapper<Point>::define_class("PointVec");
-		main_ns["points"] = VectorWrapper<Point>(&points);
+		main_ns["PointVec"] = wrap_vector<Point>("PointVec");
+		main_ns["points"] = &points;
 
 		// instantiate some objects and call them from python side.
 		exec(
