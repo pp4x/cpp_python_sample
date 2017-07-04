@@ -78,7 +78,7 @@ object wrap_vector(const std::string & name)
 /*
  * 
  */
-int main(int, char** argv)
+int main(int argc, char** argv)
 {
 	Foo foo("natively constructed!");
 	std::vector<int> ints;
@@ -98,6 +98,7 @@ int main(int, char** argv)
 		// initialise python interpreter.
 		Py_SetProgramName(argv[0]);
 		Py_Initialize();
+		PySys_SetArgv(argc, argv);
 
 		// define wrapper classes.
 		class_<Foo> fooClass("Foo", init<std::string>());
@@ -121,6 +122,8 @@ int main(int, char** argv)
 
 		// instantiate some objects and call them from python side.
 		exec(
+			"import sys\n"
+			"print sys.argv\n"
 			"print 'instatiation of objects.'\n"
 			"bar1 = bar.Bar(Foo('Hello C++ Object!'))\n"
 			"bar2 = bar.Bar(foow)\n"
